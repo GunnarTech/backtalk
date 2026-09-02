@@ -410,11 +410,17 @@ class Mouth:
             finally:
                 if self._q.empty():
                     self._speaking.clear()
-                    # The reply has genuinely stopped talking, as opposed to
-                    # the gap between two sentences of the same reply.
-                    signals.reply_done()
                     self.ducker.speech_end()
-                    signals.set_state("idle")
+                    if signals.turn_active():
+                        # More sentences are still coming (the agent is
+                        # generating or running tools) — this is a gap
+                        # BETWEEN sentences, not the reply finishing.
+                        signals.set_state("thinking")
+                        signals.static_start()
+                    else:
+                        # The reply has genuinely stopped talking.
+                        signals.reply_done()
+                        signals.set_state("idle")
 
     def _get_out(self, rate: int) -> sd.OutputStream:
         """The long-lived stream (audio law #1). Reopened only when the

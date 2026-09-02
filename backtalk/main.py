@@ -622,6 +622,10 @@ async def speak_reply(brain: WarmBrain, mouth: Mouth, text: str):
     try:
         async for sentence in brain.ask_stream(text):
             emit(sentence)
+        # Generation is done: no more sentences are coming, so the queue
+        # emptying from here on is the reply actually finishing, not a
+        # gap while the agent is still working on the next chunk.
+        signals.set_turn_active(False)
         if batch:
             mouth.say_chunk(" ".join(batch), pending)
             pending = []
@@ -631,6 +635,7 @@ async def speak_reply(brain: WarmBrain, mouth: Mouth, text: str):
             signals.static_stop()
             signals.set_state("idle")
     except asyncio.CancelledError:
+        signals.set_turn_active(False)
         try:
             await brain.interrupt()
         except Exception:
@@ -926,6 +931,7 @@ async def amain():
             await run_console(verb)
             return True
         signals.set_state("thinking")
+        signals.set_turn_active(True)
         signals.static_start()
         # Clean the pipe: drain the interrupted turn's leftovers so the
         # new question can't pair with a stale ResultMessage. A gate

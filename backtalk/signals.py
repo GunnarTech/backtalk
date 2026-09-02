@@ -64,6 +64,24 @@ _WAVEFORM_MIN_INTERVAL = 1.0 / 15   # ~15 writes/sec is plenty for 60fps reads
 _last_waveform_write = 0.0
 _static_proc: subprocess.Popen | None = None
 
+# True from the moment a turn starts generating until brain.ask_stream has
+# yielded its last sentence. A reply comes out in 1-2 sentence breaths, so
+# the mouth's queue empties BETWEEN chunks constantly while the agent is
+# still working (running tools, generating the next chunk) — that used to
+# read as "idle" exactly like a reply that had genuinely finished, so a
+# long silent tool-heavy stretch of a turn looked indistinguishable from
+# doing nothing. This flag lets mouth.py tell the two apart.
+_turn_active = False
+
+
+def set_turn_active(active: bool):
+    global _turn_active
+    _turn_active = bool(active)
+
+
+def turn_active() -> bool:
+    return _turn_active
+
 
 def set_state(name: str):
     """Write the state. Never raises — the show must go on."""
