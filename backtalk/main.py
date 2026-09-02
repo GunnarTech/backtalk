@@ -613,6 +613,7 @@ async def speak_reply(brain: WarmBrain, mouth: Mouth, text: str):
             first = False
         else:
             log(f"[{NAME}] {s}" + (f"  <directions: {pending}>" if pending else ""))
+            signals.transcript(NAME, s)
             batch.append(s)
             if len(batch) >= 2:
                 mouth.say_chunk(" ".join(batch), pending)
@@ -867,6 +868,7 @@ async def amain():
         told apart from speech that began before the ask even existed."""
         nonlocal speak_task
         log(f"[you]    {text}")
+        signals.transcript("you", text)
         # A pending spoken permission ask owns the next utterance IF
         # that utterance started after the ask was posed. Speech that
         # began earlier is the user interrupting the turn, not

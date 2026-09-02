@@ -53,6 +53,7 @@ _LOADING_PID_FILE = os.path.join(_DIR, ".voice_loading_pid")
 _DIRECTION_FILE = os.path.join(_DIR, ".voice_direction")
 _REPLY_DONE_FILE = os.path.join(_DIR, ".voice_reply_done")
 _RATE_LIMIT_FILE = os.path.join(_DIR, ".voice_rate_limits")
+_TRANSCRIPT_FILE = os.path.join(_DIR, ".voice_transcript")
 
 _BH = CFG.get("barehands_state_dir") or ""
 _BH_STATE = os.path.join(_BH, "state") if _BH else ""
@@ -158,6 +159,40 @@ def reply_done():
     try:
         with open(_REPLY_DONE_FILE, "w") as f:
             f.write(json.dumps({"ts": time.time()}))
+    except OSError:
+        pass
+
+
+_TRANSCRIPT_MAX = 60
+
+
+def transcript(role: str, text: str):
+    """Append one spoken line to the rolling conversation transcript.
+
+    Subtitles, and a scrollback for when the room was noisy or the
+    listener was not listening. `role` is "you" or the agent's name.
+
+    Kept to the last _TRANSCRIPT_MAX lines: this is a live caption track,
+    not a log. The real log is already in logs/backtalk.log. Written to a
+    temp file and replaced, so a face polling ~8x/sec can never read a
+    half-written file. Never raises."""
+    text = " ".join(str(text).split())
+    if not text:
+        return
+    try:
+        try:
+            with open(_TRANSCRIPT_FILE, encoding="utf-8") as f:
+                lines = json.load(f)
+            if not isinstance(lines, list):
+                lines = []
+        except (OSError, ValueError):
+            lines = []
+        lines.append({"ts": time.time(), "role": str(role), "text": text})
+        lines = lines[-_TRANSCRIPT_MAX:]
+        tmp = _TRANSCRIPT_FILE + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(lines, f, ensure_ascii=False)
+        os.replace(tmp, _TRANSCRIPT_FILE)
     except OSError:
         pass
 
