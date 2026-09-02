@@ -102,6 +102,7 @@ class WarmBrain:
                 can_use_tool=self._can_use_tool,
                 add_dirs=CFG["extra_dirs"],
                 skills=CFG["visible_skills"],
+                max_buffer_size=CFG["max_buffer_size"],
                 resume=rid,
             )
         if resume:
