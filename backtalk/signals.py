@@ -250,14 +250,23 @@ def set_rate_limit(window: str, utilization, resets_at):
 
 
 def _player_cmd(path: str) -> list[str] | None:
+    # 3 Sep 2026: the bundled assets/thinking.wav measures ~5% RMS (quiet)
+    # with repeated transient peaks at 80-89% of full scale in its first
+    # ~11 seconds — near-silence punctuated by sudden near-peak spikes,
+    # not evenly loud. The old -volume/-v levels below still put those
+    # spikes at roughly 30% of full digital scale, which read as a
+    # startling crack rather than a background cue (reported: "sounds
+    # like a flashbang"). Cut hard rather than nudged — a thinking sound
+    # that must be strained to hear is the safe failure mode; one that
+    # jumps out is not.
     if sys.platform == "darwin":
-        return ["afplay", "-v", "0.35", path]
+        return ["afplay", "-v", "0.12", path]
     for cand in ("ffplay", "aplay", "paplay"):
         from shutil import which
         if which(cand):
             if cand == "ffplay":
                 return ["ffplay", "-nodisp", "-autoexit", "-loglevel",
-                        "quiet", "-volume", "35", path]
+                        "quiet", "-volume", "12", path]
             return [cand, path]
     return None
 
