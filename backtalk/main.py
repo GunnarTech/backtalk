@@ -645,6 +645,12 @@ async def speak_reply(brain: WarmBrain, mouth: Mouth, text: str):
 
 
 async def amain():
+    # Clear the face's transcript and activity panels before anything else
+    # runs. resume_last_session (below) reattaches the actual Claude
+    # conversation — the model remembers everything — but Daniel asked for
+    # the screen to start clean on every launch regardless: what he sees on
+    # load should be this session only, never a previous one's leftovers.
+    signals.clear_visual_history()
     open_mic = "--open-mic" in sys.argv
     barge_in = "--barge-in" in sys.argv
     model = None

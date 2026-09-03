@@ -54,6 +54,7 @@ _DIRECTION_FILE = os.path.join(_DIR, ".voice_direction")
 _REPLY_DONE_FILE = os.path.join(_DIR, ".voice_reply_done")
 _RATE_LIMIT_FILE = os.path.join(_DIR, ".voice_rate_limits")
 _TRANSCRIPT_FILE = os.path.join(_DIR, ".voice_transcript")
+_ACTIVITY_FILE = os.path.join(_DIR, ".agent_activity")
 
 _BH = CFG.get("barehands_state_dir") or ""
 _BH_STATE = os.path.join(_BH, "state") if _BH else ""
@@ -164,6 +165,27 @@ def reply_done():
 
 
 _TRANSCRIPT_MAX = 60
+
+
+def clear_visual_history():
+    """Empty the transcript captions and the activity feed on the face.
+
+    Called once at startup, before anything else, regardless of whether
+    resume_last_session reattaches the underlying Claude conversation —
+    Daniel asked for the two to be independent: the brain can remember
+    everything, the screen should only show this session. Both files are
+    written to a temp path and replaced, same as every other write on this
+    bus, so a face polling mid-write never reads a half-cleared file.
+    Never raises: a launch must not fail because a stale caption couldn't
+    be wiped."""
+    for path in (_TRANSCRIPT_FILE, _ACTIVITY_FILE):
+        try:
+            tmp = path + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                f.write("[]")
+            os.replace(tmp, path)
+        except OSError:
+            pass
 
 
 def transcript(role: str, text: str):
